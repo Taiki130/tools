@@ -5,8 +5,9 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"log"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,7 @@ import (
 // findCmd represents the find command
 var findCmd = &cobra.Command{
 	Use:   "find",
-	Short: "A brief description of your command",
+	Short: "特定のディレクトリ内の全てのファイルとディレクトリを再帰的にリスト表示する。",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -22,26 +23,19 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		files, err := ioutil.ReadDir("../")
+		err := filepath.Walk("../", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			fmt.Println(path)
+			return nil
+		})
 		if err != nil {
 			log.Fatal(err)
-		}
-		for _, f := range files {
-			fmt.Println(f.Name())
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(findCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// findCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// findCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
