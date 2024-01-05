@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -35,9 +36,11 @@ var extCountCmd = &cobra.Command{
 			extCount[fileInfo.Ext]++
 		}
 
-		for ext, count := range extCount {
-			fmt.Printf("Ext: %s, Count: %d\n", ext, count)
+		json, err := json.MarshalIndent(extCount, "", " ")
+		if err != nil {
+			log.Fatal(err)
 		}
+		fmt.Println(string(json))
 	},
 }
 
