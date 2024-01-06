@@ -34,6 +34,9 @@ var psqlCmd = &cobra.Command{
 
 		var cfg Config
 		err = yaml.Unmarshal(configFile, &cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		dbDriver := "postgres"
 		dsn := fmt.Sprintf("host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.DBName)
@@ -44,6 +47,21 @@ var psqlCmd = &cobra.Command{
 		defer db.Close()
 
 		fmt.Printf("Connection to PostgreSQL server at %s is successful.\n", cfg.Host)
+
+		ddl, err := os.ReadFile("db/ddl.sql")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err = db.Exec(string(ddl)); err != nil {
+			log.Fatal(err)
+		}
+		dml, err := os.ReadFile("db/dml.sql")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err = db.Exec(string(dml)); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
