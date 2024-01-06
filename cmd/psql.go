@@ -21,6 +21,33 @@ type Config struct {
 	DBName   string `yaml:"dbname"`
 }
 
+type AvailableBook struct {
+	BookTitle  string
+	AutherName string
+}
+
+type LoansBook struct {
+	BookTitle  string
+	AutherName string
+}
+
+type ExpiredBook struct {
+	UserName  string
+	BookTitle string
+}
+
+func DBExec(db *sql.DB, file string) error {
+	query, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	queryString := string(query)
+	if _, err = db.Exec(queryString); err != nil {
+		return err
+	}
+	return nil
+}
+
 // psqlCmd represents the psql command
 var psqlCmd = &cobra.Command{
 	Use:   "psql",
@@ -46,21 +73,69 @@ var psqlCmd = &cobra.Command{
 		}
 		defer db.Close()
 
+		if err = db.Ping(); err != nil {
+			log.Fatal(err)
+		}
+
 		fmt.Printf("Connection to PostgreSQL server at %s is successful.\n", cfg.Host)
 
-		ddl, err := os.ReadFile("db/ddl.sql")
+		files := []string{"db/ddl.sql", "db/dml.sql"}
+
+		for _, file := range files {
+			if err := DBExec(db, file); err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		queryString := []string{
+			"SELECT books.title, authors.name FROM books JOIN authors ON books.author_id = authors.id;",
+			"SELECT books.title, authors.name FROM books JOIN authors ON books.author_id = authors.id JOIN loans ON books.id = loans.book_id WHERE loans.user_id = 1;",
+			"SELECT users.name, books.title FROM users JOIN loans ON users.id = loans.user_id JOIN books ON loans.book_id = books.id WHERE loans.due_date < CURRENT_DATE;",
+		}
+
+		rows, err := db.Query(queryString[0])
 		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err = db.Exec(string(ddl)); err != nil {
-			log.Fatal(err)
+		defer rows.Close()
+		var ab AvailableBook
+		fmt.Println("全ての利用可能な書籍のタイトルと著者名は、")
+		for rows.Next() {
+			err := rows.Scan(&ab.BookTitle, &ab.AutherName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("BookTitle: %s, AutherName: %s\n", ab.BookTitle, ab.AutherName)
 		}
-		dml, err := os.ReadFile("db/dml.sql")
+
+		rows, err = db.Query(queryString[1])
 		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err = db.Exec(string(dml)); err != nil {
+		defer rows.Close()
+		var lb LoansBook
+		fmt.Println("指定されたユーザーが借りた書籍は、")
+		for rows.Next() {
+			err := rows.Scan(&lb.BookTitle, &lb.AutherName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("BookTitle: %s, AutherName: %s\n", lb.BookTitle, lb.AutherName)
+		}
+
+		rows, err = db.Query(queryString[2])
+		if err != nil {
 			log.Fatal(err)
+		}
+		defer rows.Close()
+		var eb ExpiredBook
+		fmt.Println("期限切れの貸出書籍のユーザー名とタイトルは、")
+		for rows.Next() {
+			err := rows.Scan(&eb.UserName, &eb.BookTitle)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("UserName: %s, BookTitle: %s\n", eb.UserName, eb.BookTitle)
 		}
 	},
 }
