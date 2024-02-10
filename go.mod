@@ -1,6 +1,6 @@
 module github.com/Taiki130/tools
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/go-ping/ping v1.1.0
