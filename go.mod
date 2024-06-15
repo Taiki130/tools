@@ -6,7 +6,7 @@ require (
 	github.com/go-ping/ping v1.1.0
 	github.com/lib/pq v1.10.9
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
